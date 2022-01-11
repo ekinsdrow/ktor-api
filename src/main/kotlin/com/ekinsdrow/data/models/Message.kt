@@ -3,4 +3,4 @@ package com.ekinsdrow.data.models
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class User(val name: String)
+data class Message(val text: String, val user: User)
