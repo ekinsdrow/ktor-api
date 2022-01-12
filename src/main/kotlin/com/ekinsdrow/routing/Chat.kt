@@ -13,22 +13,25 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import com.ekinsdrow.routing.startSocket
 
 fun Route.chatRoute() {
 
+    val rooms = mutableListOf<Room>()
+
     route("/rooms") {
-        val rooms = mutableListOf<Room>()
-
-        for (i in 0..2) {
-            rooms.add(Room(id = i, name = "Room $i"))
-        }
-
-
         post("add") {
-            val id = rooms.last().id
+            val id = if(rooms.isEmpty()){
+                0
+            }else{
+                rooms.last().id + 1
+            }
             val name = Json.decodeFromString<RoomRequestBody>(call.receiveText()).name
-            val room = Room(id + 1, name)
+            val room = Room(id, name)
             rooms.add(room)
+
+            this@route.startSocket(id)
+
             call.respond(room)
         }
 
@@ -38,7 +41,12 @@ fun Route.chatRoute() {
 
     }
 
-    webSocket("/chat") {
+
+}
+
+
+fun Route.startSocket(index: Int) {
+    webSocket("$index") {
         for (frame in incoming) {
             when (frame) {
                 is Frame.Text -> {
@@ -50,5 +58,3 @@ fun Route.chatRoute() {
         }
     }
 }
-
-
