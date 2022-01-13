@@ -1,10 +1,10 @@
 package com.ekinsdrow.routing
 
+import com.ekinsdrow.controllers.RoomsController
 import com.ekinsdrow.data.models.Message
 import com.ekinsdrow.data.models.Room
 import com.ekinsdrow.data.models.RoomRequestBody
 import io.ktor.http.*
-import io.ktor.http.websocket.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -13,47 +13,53 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import com.ekinsdrow.routing.startSocket
+import kotlinx.serialization.SerializationException
 
-fun Route.chatRoute() {
-
-    val rooms = mutableListOf<Room>()
+fun Route.chatRoute(roomsController: RoomsController) {
 
     route("/rooms") {
         post("add") {
-            val id = if(rooms.isEmpty()){
-                0
-            }else{
-                rooms.last().id + 1
+            try {
+                val name = Json.decodeFromString<RoomRequestBody>(call.receiveText()).name
+                val room = roomsController.createRoom(name)
+                this@route.startSocket(room = room, roomsController)
+                call.respond(room)
+            } catch (e: SerializationException) {
+                call.respond(HttpStatusCode.BadRequest)
             }
-            val name = Json.decodeFromString<RoomRequestBody>(call.receiveText()).name
-            val room = Room(id, name)
-            rooms.add(room)
-
-            this@route.startSocket(id)
-
-            call.respond(room)
         }
 
         get {
-            call.respond(rooms)
+            call.respond(roomsController.getAllRooms())
         }
 
+        get("{id}/messages") {
+            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val idInt = id.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val messages = roomsController.getAllMessages(idInt) ?: return@get call.respond(listOf<Message>())
+            call.respond(messages)
+        }
     }
 
 
 }
 
 
-fun Route.startSocket(index: Int) {
-    webSocket("$index") {
+fun Route.startSocket(room: Room, roomsController: RoomsController) {
+    webSocket("${room.id}") {
         for (frame in incoming) {
             when (frame) {
                 is Frame.Text -> {
-                    val message = Json.decodeFromString(Message.serializer(), frame.readText())
-                    send(Frame.Text(Json.encodeToString(Message.serializer(), message)))
+                    try {
+                        val message = Json.decodeFromString(Message.serializer(), frame.readText())
+                        roomsController.addMessage(room.id, message)
+                        send(frame)
+                    } catch (e: SerializationException) {
+                        call.respond(HttpStatusCode.BadRequest)
+                    }
                 }
-                else -> send("shit")
+                else -> call.respond(HttpStatusCode.BadRequest)
+
             }
         }
     }

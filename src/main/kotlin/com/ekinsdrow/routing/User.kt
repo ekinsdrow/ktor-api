@@ -10,6 +10,8 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
+
+//TODO: replace logic to controller and repo
 fun Route.userRoute() {
     val users = mutableListOf<User>()
 
