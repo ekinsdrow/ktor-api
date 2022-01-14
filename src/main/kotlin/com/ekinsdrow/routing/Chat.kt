@@ -1,6 +1,6 @@
 package com.ekinsdrow.routing
 
-import com.ekinsdrow.controllers.RoomsController
+import com.ekinsdrow.domain.RoomsController
 import com.ekinsdrow.data.models.Message
 import com.ekinsdrow.data.models.Room
 import com.ekinsdrow.data.models.RoomRequestBody

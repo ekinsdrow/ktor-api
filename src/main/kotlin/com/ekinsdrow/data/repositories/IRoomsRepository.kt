@@ -2,6 +2,7 @@ package com.ekinsdrow.data.repositories
 
 import com.ekinsdrow.data.models.Message
 import com.ekinsdrow.data.models.Room
+import com.ekinsdrow.data.models.User
 
 interface IRoomsRepository {
     fun getRooms(): List<Room>

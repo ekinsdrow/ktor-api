@@ -2,57 +2,44 @@ package com.ekinsdrow.routing
 
 import com.ekinsdrow.data.models.User
 import com.ekinsdrow.data.models.UserRequestBody
+import com.ekinsdrow.data.repositories.IUsersRepository
+import com.ekinsdrow.domain.UsersController
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 
-//TODO: replace logic to controller and repo
-fun Route.userRoute() {
-    val users = mutableListOf<User>()
+fun Route.userRoute(usersController: UsersController) {
 
     route("/users") {
         post("add") {
-            val userBody = Json.decodeFromString<UserRequestBody>(call.receiveText())
-            val id = if (users.isEmpty()) {
-                0
-            } else {
-                users.last().id + 1
+            try {
+                val name = Json.decodeFromString<UserRequestBody>(call.receiveText()).name
+                val user = usersController.createUser(name)
+                call.respond(user)
+            } catch (e: SerializationException) {
+                call.respond(HttpStatusCode.BadRequest)
             }
-
-
-            val user = User(userBody.name, id)
-            users.add(user)
-
-            call.respond(user)
 
         }
 
         get {
-            call.respond(users)
+            call.respond(usersController.getAllUsers())
         }
 
         get("{id}") {
-            val id = call.parameters["id"]
-            if (id == null) {
+            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val idInt = id.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
+            val user = usersController.getUser(idInt)
+            if(user == null){
                 call.respond(HttpStatusCode.NotFound)
-            } else {
-                val idInt = id.toIntOrNull()
-                if (idInt == null) {
-                    call.respond(HttpStatusCode.NotFound)
-                } else {
-                    val user = users.findLast { it.id == idInt }
-                    if (user == null) {
-                        call.respond(HttpStatusCode.NotFound)
-                    }else{
-                        call.respond(user)
-                    }
-
-                }
+            }else{
+                call.respond(user)
             }
         }
     }

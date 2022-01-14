@@ -1,4 +1,4 @@
-package com.ekinsdrow.controllers
+package com.ekinsdrow.domain
 
 import com.ekinsdrow.data.models.Message
 import com.ekinsdrow.data.models.Room
