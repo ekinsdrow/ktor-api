@@ -14,6 +14,8 @@ import io.ktor.websocket.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerializationException
+import java.util.*
+import kotlin.collections.LinkedHashSet
 
 fun Route.chatRoute(roomsController: RoomsController) {
 
@@ -46,20 +48,25 @@ fun Route.chatRoute(roomsController: RoomsController) {
 
 
 fun Route.startSocket(room: Room, roomsController: RoomsController) {
+    val connections = Collections.synchronizedSet<DefaultWebSocketServerSession?>(LinkedHashSet())
     webSocket("${room.id}") {
         for (frame in incoming) {
+            connections.add(this)
             when (frame) {
                 is Frame.Text -> {
                     try {
-                        val message = Json.decodeFromString(Message.serializer(), frame.readText())
+                        val messageFrame = frame.readText()
+                        val message = Json.decodeFromString(Message.serializer(), messageFrame)
                         roomsController.addMessage(room.id, message)
-                        send(frame)
+
+                        connections.forEach {
+                            it.send(messageFrame)
+                        }
                     } catch (e: SerializationException) {
                         call.respond(HttpStatusCode.BadRequest)
                     }
                 }
                 else -> call.respond(HttpStatusCode.BadRequest)
-
             }
         }
     }

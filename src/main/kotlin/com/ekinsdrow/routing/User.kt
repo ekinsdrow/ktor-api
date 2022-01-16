@@ -1,8 +1,6 @@
 package com.ekinsdrow.routing
 
-import com.ekinsdrow.data.models.User
 import com.ekinsdrow.data.models.UserRequestBody
-import com.ekinsdrow.data.repositories.IUsersRepository
 import com.ekinsdrow.domain.UsersController
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -36,9 +34,9 @@ fun Route.userRoute(usersController: UsersController) {
             val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
             val idInt = id.toIntOrNull() ?: return@get call.respond(HttpStatusCode.BadRequest)
             val user = usersController.getUser(idInt)
-            if(user == null){
+            if (user == null) {
                 call.respond(HttpStatusCode.NotFound)
-            }else{
+            } else {
                 call.respond(user)
             }
         }

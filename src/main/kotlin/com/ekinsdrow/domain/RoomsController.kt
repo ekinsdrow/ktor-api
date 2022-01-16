@@ -5,6 +5,7 @@ import com.ekinsdrow.data.models.Room
 import com.ekinsdrow.data.repositories.IRoomsRepository
 
 class RoomsController(private val roomsRepo: IRoomsRepository) {
+
     fun createRoom(name: String): Room {
         val rooms = roomsRepo.getRooms()
         val id = if (rooms.isEmpty()) {
@@ -22,7 +23,7 @@ class RoomsController(private val roomsRepo: IRoomsRepository) {
     }
 
     fun getAllMessages(roomId: Int): List<Message>? {
-        val room = roomsRepo.getRooms().findLast { it.id == roomId } ?: return null
+        val room = getRoomById(roomId) ?: return null
         return room.messages
     }
 
@@ -30,5 +31,8 @@ class RoomsController(private val roomsRepo: IRoomsRepository) {
         roomsRepo.addMessageToRoom(roomId, message)
     }
 
-
+    private fun getRoomById(roomId: Int): Room? {
+        val rooms = getAllRooms()
+        return rooms.findLast { it.id == roomId }
+    }
 }
